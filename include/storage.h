@@ -1,20 +1,18 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
+#include <stddef.h>
 #include "book.h"
-#include "user.h"
 #include "loan.h"
+#include "user.h"
 
-/* Simple persistence layer prototypes (text files, CSV or simple format)
-   Implementations should follow the project's constraints: only C stdlib. */
+int storage_load_users(User users[], size_t max_users, const char *path);
+int storage_save_users(const User users[], size_t count, const char *path);
 
-int storage_load_books(const char *path);
-int storage_save_books(const char *path);
+int storage_load_books(Book books[], size_t max_books, const char *path);
+int storage_save_books(const Book books[], size_t count, const char *path);
 
-int storage_load_users(const char *path);
-int storage_save_users(const char *path);
-
-int storage_load_loans(const char *path);
-int storage_save_loans(const char *path);
+int storage_load_loans(Loan loans[], size_t max_loans, const char *path);
+int storage_save_loans(const Loan loans[], size_t count, const char *path);
 
 #endif

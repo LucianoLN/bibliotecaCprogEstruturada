@@ -12,13 +12,13 @@ typedef struct Book {
     int quantity;
 } Book;
 
-/* Book management API (in-memory) */
+
 void book_init(void);
-int book_add(const Book *b); /* returns 0 on success, <0 on error */
+int book_add(const Book *b);
 Book *book_find_by_id(int id);
 Book *book_find_by_title(const char *title);
 void book_list(void);
-int book_adjust_quantity(int id, int delta); /* delta can be negative */
+int book_adjust_quantity(int id, int delta); 
 
 
 #endif
