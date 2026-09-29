@@ -5,6 +5,9 @@
 #define USER_COURSE_LEN 128
 
 void user_init(void);
+int user_load_from_file(const char *path);
+int user_save_to_file(const char *path);
+int user_count_get(void);
 int user_add(const struct User *u);
 struct User *user_find_by_id(int id);
 struct User *user_find_by_name(const char *name);
@@ -17,4 +20,4 @@ typedef struct User {
     char course[USER_COURSE_LEN];
 } User;
 
-#endif 
+#endif

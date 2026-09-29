@@ -14,6 +14,23 @@ void user_init(void) {
     user_count = 0;
 }
 
+int user_count_get(void) {
+    return user_count;
+}
+
+int user_load_from_file(const char *path) {
+    int loaded = storage_load_users(users, MAX_USERS, path ? path : "data/users.txt");
+    if (loaded < 0) {
+        return -1;
+    }
+    user_count = loaded;
+    return loaded;
+}
+
+int user_save_to_file(const char *path) {
+    return storage_save_users(users, (size_t)user_count, path ? path : "data/users.txt");
+}
+
 int user_add(const User *u) {
     if (!u) {
         return -1;
@@ -23,9 +40,13 @@ int user_add(const User *u) {
         return -2;
     }
 
+    if (u->name[0] == '\0' || u->course[0] == '\0') {
+        return -3;
+    }
+
     for (int i = 0; i < user_count; ++i) {
         if (users[i].id == u->id) {
-            return -3;
+            return -4;
         }
     }
 
@@ -80,10 +101,8 @@ static void user_clear_input(void) {
 
 void user_run(void) {
     user_init();
-
-    int loaded = storage_load_users(users, MAX_USERS, "data/users.txt");
-    if (loaded > 0) {
-        user_count = loaded;
+    if (user_load_from_file("data/users.txt") < 0) {
+        puts("Arquivo de usuarios nao encontrado. Continuando com lista vazia.");
     }
 
     int option = 0;
@@ -139,7 +158,7 @@ void user_run(void) {
 
                 int status = user_add(&u);
                 if (status == 0) {
-                    storage_save_users(users, (size_t)user_count, "data/users.txt");
+                    user_save_to_file("data/users.txt");
                     puts("Usuario cadastrado com sucesso.");
                 } else {
                     printf("Erro ao cadastrar usuario: %d\n", status);
