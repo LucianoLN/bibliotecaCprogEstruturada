@@ -1,271 +1,147 @@
-#include <stdio.h>
+/*
+ * storage.c - Estado da biblioteca em memoria.
+ *
+ * [COMMIT 6 - ALOCACAO DINAMICA]  vetores dinamicos com malloc/realloc/free.
+ * [COMMIT 13 - VALIDACAO]         validacao de ano.
+ */
 #include <stdlib.h>
 #include <string.h>
+#include "search.h"
+#include "storage.h"
+#include "util.h"
 
-#include "../include/storage.h"
-
-#define STORAGE_LINE_LEN 512
-
-static char *storage_trim(char *text) {
-    if (!text) return NULL;
-
-    while (*text == ' ' || *text == '\t' || *text == '\r' || *text == '\n') {
-        text++;
-    }
-
-    if (*text == '\0') return text;
-
-    char *end = text + strlen(text) - 1;
-    while (end > text && (*end == ' ' || *end == '\t' || *end == '\r' || *end == '\n')) {
-        *end = '\0';
-        end--;
-    }
-
-    return text;
+/* [COMMIT 6] Garante espaco para mais um item dobrando a capacidade.
+ * Devolve o vetor (talvez movido pelo realloc) ou NULL sem memoria; nesse
+ * caso o vetor antigo continua valido, entao nada se perde. */
+static void *grow(void *arr, size_t *cap, size_t count, size_t elem_size) {
+    size_t new_cap;
+    void *p;
+    if (count < *cap) return arr;
+    new_cap = *cap ? *cap * 2 : 8;
+    p = realloc(arr, new_cap * elem_size);
+    if (p) *cap = new_cap;
+    return p;
 }
 
-static int storage_parse_int(const char *text, int *value) {
-    char *end = NULL;
-    long parsed = strtol(text, &end, 10);
-    if (text == end || *text == '\0') {
-        return -1;
+void lib_init(Library *lib) {
+    memset(lib, 0, sizeof *lib);
+    lib->next_book_id = 1;
+    lib->next_loan_id = 1;
+}
+
+/* [COMMIT 6] liberar_memoria: cada malloc/realloc tem seu free aqui. */
+void lib_free(Library *lib) {
+    free(lib->books);
+    free(lib->users);
+    free(lib->loans);
+    lib_init(lib);
+}
+
+const char *lib_strerror(int err) {
+    switch (err) {
+    case LIB_ERR_NOMEM:       return "memoria insuficiente";
+    case LIB_ERR_NO_BOOK:     return "livro nao encontrado";
+    case LIB_ERR_NO_USER:     return "usuario nao encontrado";
+    case LIB_ERR_UNAVAILABLE: return "nenhum exemplar disponivel";
+    case LIB_ERR_DUPLICATE:   return "matricula ja cadastrada";
+    case LIB_ERR_NO_LOAN:     return "nao ha emprestimo em aberto desse livro para esse usuario";
+    case LIB_ERR_INVALID:     return "dados invalidos";
+    default:                  return "erro desconhecido";
     }
-    *value = (int)parsed;
+}
+
+int lib_push_book(Library *lib, const Book *b) {
+    Book *v = grow(lib->books, &lib->cap_books, lib->n_books, sizeof *v);
+    if (!v) return LIB_ERR_NOMEM;
+    lib->books = v;
+    v[lib->n_books++] = *b;
+    if (b->id >= lib->next_book_id) lib->next_book_id = b->id + 1;
     return 0;
 }
 
-static int storage_parse_bool(const char *text, bool *value) {
-    if (!text || !value) return -1;
-
-    if (strcmp(text, "1") == 0 || strcmp(text, "true") == 0 || strcmp(text, "TRUE") == 0) {
-        *value = true;
-        return 0;
-    }
-
-    if (strcmp(text, "0") == 0 || strcmp(text, "false") == 0 || strcmp(text, "FALSE") == 0) {
-        *value = false;
-        return 0;
-    }
-
-    return -1;
-}
-
-int storage_load_users(User users[], size_t max_users, const char *path) {
-    FILE *file = fopen(path, "r");
-    if (!file) {
-        return -1;
-    }
-
-    char line[STORAGE_LINE_LEN];
-    int count = 0;
-
-    if (!fgets(line, sizeof(line), file)) {
-        fclose(file);
-        return 0;
-    }
-
-    while (fgets(line, sizeof(line), file)) {
-        char *record = storage_trim(line);
-        if (*record == '\0' || *record == '#') {
-            continue;
-        }
-
-        if (count >= (int)max_users) {
-            break;
-        }
-
-        char *fields[3] = {0};
-        int field_count = 0;
-        char *token = strtok(record, ";");
-        while (token && field_count < 3) {
-            fields[field_count++] = storage_trim(token);
-            token = strtok(NULL, ";");
-        }
-
-        if (field_count < 3) {
-            continue;
-        }
-
-        if (storage_parse_int(fields[0], &users[count].id) != 0) {
-            continue;
-        }
-
-        snprintf(users[count].name, sizeof(users[count].name), "%s", fields[1]);
-        snprintf(users[count].course, sizeof(users[count].course), "%s", fields[2]);
-        count++;
-    }
-
-    fclose(file);
-    return count;
-}
-
-int storage_save_users(const User users[], size_t count, const char *path) {
-    FILE *file = fopen(path, "w");
-    if (!file) {
-        return -1;
-    }
-
-    fprintf(file, "id;name;course\n");
-    for (size_t i = 0; i < count; ++i) {
-        fprintf(file, "%d;%s;%s\n",
-                users[i].id,
-                users[i].name,
-                users[i].course);
-    }
-
-    fclose(file);
+int lib_push_user(Library *lib, const User *u) {
+    User *v = grow(lib->users, &lib->cap_users, lib->n_users, sizeof *v);
+    if (!v) return LIB_ERR_NOMEM;
+    lib->users = v;
+    v[lib->n_users++] = *u;
     return 0;
 }
 
-int storage_load_books(Book books[], size_t max_books, const char *path) {
-    FILE *file = fopen(path, "r");
-    if (!file) {
-        return -1;
-    }
-
-    char line[STORAGE_LINE_LEN];
-    int count = 0;
-
-    if (!fgets(line, sizeof(line), file)) {
-        fclose(file);
-        return 0;
-    }
-
-    while (fgets(line, sizeof(line), file)) {
-        char *record = storage_trim(line);
-        if (*record == '\0' || *record == '#') {
-            continue;
-        }
-
-        if (count >= (int)max_books) {
-            break;
-        }
-
-        char *fields[5] = {0};
-        int field_count = 0;
-        char *token = strtok(record, ";");
-        while (token && field_count < 5) {
-            fields[field_count++] = storage_trim(token);
-            token = strtok(NULL, ";");
-        }
-
-        if (field_count < 5) {
-            continue;
-        }
-
-        if (storage_parse_int(fields[0], &books[count].id) != 0) {
-            continue;
-        }
-
-        snprintf(books[count].title, sizeof(books[count].title), "%s", fields[1]);
-        snprintf(books[count].author, sizeof(books[count].author), "%s", fields[2]);
-        if (storage_parse_int(fields[3], &books[count].year) != 0) {
-            continue;
-        }
-        if (storage_parse_int(fields[4], &books[count].quantity) != 0) {
-            continue;
-        }
-
-        count++;
-    }
-
-    fclose(file);
-    return count;
-}
-
-int storage_save_books(const Book books[], size_t count, const char *path) {
-    FILE *file = fopen(path, "w");
-    if (!file) {
-        return -1;
-    }
-
-    fprintf(file, "id;title;author;year;quantity\n");
-    for (size_t i = 0; i < count; ++i) {
-        fprintf(file, "%d;%s;%s;%d;%d\n",
-                books[i].id,
-                books[i].title,
-                books[i].author,
-                books[i].year,
-                books[i].quantity);
-    }
-
-    fclose(file);
+int lib_push_loan(Library *lib, const Loan *l) {
+    Loan *v = grow(lib->loans, &lib->cap_loans, lib->n_loans, sizeof *v);
+    if (!v) return LIB_ERR_NOMEM;
+    lib->loans = v;
+    v[lib->n_loans++] = *l;
+    if (l->id >= lib->next_loan_id) lib->next_loan_id = l->id + 1;
     return 0;
 }
 
-int storage_load_loans(Loan loans[], size_t max_loans, const char *path) {
-    FILE *file = fopen(path, "r");
-    if (!file) {
-        return -1;
-    }
-
-    char line[STORAGE_LINE_LEN];
-    int count = 0;
-
-    if (!fgets(line, sizeof(line), file)) {
-        fclose(file);
-        return 0;
-    }
-
-    while (fgets(line, sizeof(line), file)) {
-        char *record = storage_trim(line);
-        if (*record == '\0' || *record == '#') {
-            continue;
-        }
-
-        if (count >= (int)max_loans) {
-            break;
-        }
-
-        char *fields[5] = {0};
-        int field_count = 0;
-        char *token = strtok(record, ";");
-        while (token && field_count < 5) {
-            fields[field_count++] = storage_trim(token);
-            token = strtok(NULL, ";");
-        }
-
-        if (field_count < 5) {
-            continue;
-        }
-
-        if (storage_parse_int(fields[0], &loans[count].book_id) != 0) {
-            continue;
-        }
-        if (storage_parse_int(fields[1], &loans[count].user_id) != 0) {
-            continue;
-        }
-
-        snprintf(loans[count].date_loan, sizeof(loans[count].date_loan), "%s", fields[2]);
-        snprintf(loans[count].date_return, sizeof(loans[count].date_return), "%s", fields[3]);
-
-        if (storage_parse_bool(fields[4], &loans[count].returned) != 0) {
-            loans[count].returned = false;
-        }
-
-        count++;
-    }
-
-    fclose(file);
-    return count;
+/* '|' e o separador dos arquivos texto, entao nao pode aparecer nos campos. */
+static int valid_text(const char *s) {
+    return s && *s && !strchr(s, '|');
 }
 
-int storage_save_loans(const Loan loans[], size_t count, const char *path) {
-    FILE *file = fopen(path, "w");
-    if (!file) {
-        return -1;
-    }
+int lib_add_book(Library *lib, const char *title, const char *author, int year, int quantity) {
+    Book b;
+    int rc;
+    book_init(&b, lib->next_book_id, title, author, year, quantity);
+    rc = lib_push_book(lib, &b);
+    return rc < 0 ? rc : b.id;
+}
 
-    fprintf(file, "book_id;user_id;date_loan;date_return;returned\n");
-    for (size_t i = 0; i < count; ++i) {
-        fprintf(file, "%d;%d;%s;%s;%s\n",
-                loans[i].book_id,
-                loans[i].user_id,
-                loans[i].date_loan,
-                loans[i].date_return,
-                loans[i].returned ? "true" : "false");
-    }
+int lib_add_user(Library *lib, int registration, const char *name, const char *course) {
+    User u;
+    if (registration <= 0 || !valid_text(name) || !valid_text(course)) return LIB_ERR_INVALID;
+    if (lib_find_user(lib, registration)) return LIB_ERR_DUPLICATE;
+    memset(&u, 0, sizeof u);
+    u.registration = registration;
+    str_copy(u.name, name, sizeof u.name);
+    str_copy(u.course, course, sizeof u.course);
+    return lib_push_user(lib, &u);
+}
 
-    fclose(file);
-    return 0;
+int lib_lend(Library *lib, int registration, int book_id, time_t when) {
+    Book *b = lib_find_book(lib, book_id);
+    Loan l;
+    int rc;
+    if (!lib_find_user(lib, registration)) return LIB_ERR_NO_USER;
+    if (!b) return LIB_ERR_NO_BOOK;
+    if (b->quantity <= 0) return LIB_ERR_UNAVAILABLE;
+    memset(&l, 0, sizeof l);
+    l.id = lib->next_loan_id;
+    l.book_id = book_id;
+    l.user_reg = registration;
+    l.loan_date = when;
+    l.return_date = 0;
+    rc = lib_push_loan(lib, &l);   /* realoca so loans; o ponteiro b continua valido */
+    if (rc < 0) return rc;
+    b->quantity--;
+    return l.id;
+}
+
+int lib_return(Library *lib, int registration, int book_id, time_t when) {
+    size_t i;
+    for (i = 0; i < lib->n_loans; i++) {
+        Loan *l = &lib->loans[i];
+        if (l->user_reg == registration && l->book_id == book_id && l->return_date == 0) {
+            Book *b = lib_find_book(lib, book_id);
+            if (when < l->loan_date) return LIB_ERR_INVALID;
+            l->return_date = when;
+            if (b) b->quantity++;
+            return (int)i;
+        }
+    }
+    return LIB_ERR_NO_LOAN;
+}
+
+Book *lib_find_book(const Library *lib, int id) {
+    int i = search_seq_id(lib->books, lib->n_books, id);
+    return i < 0 ? NULL : &lib->books[i];
+}
+
+User *lib_find_user(const Library *lib, int registration) {
+    size_t i;
+    for (i = 0; i < lib->n_users; i++)
+        if (lib->users[i].registration == registration) return &lib->users[i];
+    return NULL;
 }

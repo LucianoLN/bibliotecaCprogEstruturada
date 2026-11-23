@@ -12,7 +12,8 @@ typedef struct Book {
     int quantity;
 } Book;
 
-void book_init(void);
+void book_init(Book *b, int id, const char *title, const char *author,
+               int year, int quantity);
 int book_load_from_file(const char *path);
 int book_save_to_file(const char *path);
 int book_count_get(void);
