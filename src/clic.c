@@ -142,6 +142,34 @@ static void sort_books(Library *lib) {
 }
 
 
+/* [COMMIT 9] Busca binaria. Ela so funciona em vetor ordenado pelo mesmo
+ * campo, entao confere antes e, se preciso, ordena com Insertion Sort. */
+static void binary_search_books(Library *lib) {
+    char title[LINE_LEN];
+    int id = 0, idx;
+    BookCmp cmp = read_criterion();
+    if (!cmp) return;
+    if (cmp == book_cmp_id) {
+        if (!read_int("Codigo: ", &id)) return;
+    } else {
+        read_line("Titulo exato: ", title, sizeof title);
+    }
+    if (!sort_is_sorted(lib->books, lib->n_books, cmp)) {
+        sort_insertion(lib->books, lib->n_books, cmp);
+        printf("(acervo nao estava ordenado por %s; ordenado agora com Insertion Sort)\n",
+               cmp == book_cmp_id ? "codigo" : "titulo");
+    }
+    idx = cmp == book_cmp_id ? search_bin_id(lib->books, lib->n_books, id)
+                             : search_bin_title(lib->books, lib->n_books, title);
+    if (idx < 0) {
+        printf("Livro nao encontrado.\n");
+        return;
+    }
+    print_book_header();
+    print_book(&lib->books[idx]);
+}
+
+
 /* ---------- Usuarios ---------- */
 
 static void add_user(Library *lib) {
