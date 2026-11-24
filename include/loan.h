@@ -1,27 +1,20 @@
+// [COMMIT 10 - HISTORICO POR USUARIO] [COMMIT 11 - ATRASOS E MULTA]
 #ifndef LOAN_H
 #define LOAN_H
 
-#include <stdbool.h>
-#include "book.h"
-#include "user.h"
+#include <time.h>
 
-#define DATE_LEN 11 
+#define LOAN_STATUS_ACTIVE 0
+#define LOAN_STATUS_RETURNED 1
 
 typedef struct Loan {
-    int book_id;
-    int user_id;
-    char date_loan[DATE_LEN];
-    char date_return[DATE_LEN];
-    bool returned;
+    int id;
+    int matricula;
+    int book_code;
+    time_t loan_date;
+    time_t due_date;
+    time_t return_date;
+    int status;
 } Loan;
-
-void loan_init(void);
-int loan_load_from_file(const char *path);
-int loan_save_to_file(const char *path);
-int loan_count_get(void);
-int loan_issue(int book_id, int user_id, const char *date_loan);
-int loan_return(int book_id, int user_id, const char *date_return);
-void loan_list(void);
-void loan_run(void);
 
 #endif

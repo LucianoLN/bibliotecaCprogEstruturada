@@ -241,6 +241,36 @@ static void lend_book(Library *lib) {
     printf("Emprestimo %d registrado. Devolver ate %s.\n", rc, due);
 }
 
+
+/* [COMMIT 10 - HISTORICO] Todos os emprestimos de um usuario, abertos e
+ * devolvidos, na ordem em que aconteceram, com os totais no fim. */
+static void user_history(Library *lib) {
+    int reg;
+    size_t i;
+    unsigned long total = 0, open = 0;
+    long fines = 0;                 /* [COMMIT 11] */
+    char fines_txt[24];
+    const User *u;
+    if (!read_int("Matricula: ", &reg)) return;
+    if (!(u = lib_find_user(lib, reg))) {
+        printf("Usuario nao encontrado.\n");
+        return;
+    }
+    printf("Historico de %s (matricula %d, %s)\n", u->name, u->registration, u->course);
+    for (i = 0; i < lib->n_loans; i++) {
+        const Loan *l = &lib->loans[i];
+        if (l->user_reg != reg) continue;
+        if (total++ == 0) print_loan_header();
+        print_loan(lib, l);
+        if (!l->return_date) open++;
+        fines += loan_fine_cents(l, date_today());
+    }
+    if (total == 0) printf("(nenhum emprestimo)\n");
+    fine_format(fines, fines_txt, sizeof fines_txt);
+    printf("Total: %lu emprestimo(s), %lu em aberto, %lu devolvido(s). Multas: %s.\n",
+           total, open, total - open, fines_txt);
+}
+
 /* ---------- Arquivos ---------- */
 
 static void save_now(Library *lib) {
