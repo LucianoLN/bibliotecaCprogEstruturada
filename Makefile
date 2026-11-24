@@ -1,18 +1,28 @@
 CC = gcc
-CFLAGS = -std=c11 -Wall -Wextra -Iinclude
-SRC = src/main.c src/book.c src/user.c src/loan.c src/storage.c
-OBJ = $(SRC:.c=.o)
+CFLAGS = -Wall -Wextra -std=c99 -Iinclude
+SRCS = $(wildcard src/*.c)
+OBJS = $(SRCS:.c=.o)
+HDRS = $(wildcard include/*.h)
 TARGET = biblioteca
+TEST_BIN = tests/run_tests
+
+.PHONY: all clean run test
 
 all: $(TARGET)
 
-$(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -o $@
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS)
 
-%.o: %.c
+src/%.o: src/%.c $(HDRS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-clean:
-	rm -f $(OBJ) $(TARGET)
+run: all
+	./$(TARGET)
 
-.PHONY: all clean
+# Testes com assert: todos os modulos menos o main.c do menu.
+test: $(filter-out src/main.o,$(OBJS)) tests/test_books.c
+	$(CC) $(CFLAGS) -o $(TEST_BIN) tests/test_books.c $(filter-out src/main.o,$(OBJS))
+	./$(TEST_BIN)
+
+clean:
+	-rm -f $(OBJS) $(TARGET) $(TARGET).exe $(TEST_BIN) $(TEST_BIN).exe
