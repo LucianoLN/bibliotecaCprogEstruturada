@@ -1,8 +1,3 @@
-/*
- * fine.c - Prazo de devolucao, atraso e multa dos emprestimos.
- *
- * [COMMIT 11 - ATRASOS E MULTA]   regras de prazo e multa por dia.
- */
 #include <stdio.h>
 #include "fine.h"
 #include "util.h"

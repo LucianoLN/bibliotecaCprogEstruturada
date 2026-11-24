@@ -1,11 +1,3 @@
-/*
- * report.c - Relatorio de desempenho (benchmark com clock()).
- *
- * [COMMIT 12 - RELATORIO DE DESEMPENHO]
- * Cada tamanho N usa os mesmos livros para todos os algoritmos (copia com
- * memcpy antes de cada ordenacao) e a semente do rand() e fixa, entao duas
- * execucoes na mesma maquina medem exatamente o mesmo trabalho.
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,10 +7,10 @@
 #include "sort.h"
 #include "util.h"
 
-static const size_t SIZES[] = {1000, 2000, 5000, 10000};   /* o ultimo e o dobro do penultimo */
+static const size_t SIZES[] = {1000, 2000, 5000, 10000};  
 #define N_SIZES (sizeof SIZES / sizeof SIZES[0])
-#define QUERIES 1000            /* buscas aleatorias por rodada */
-#define MIN_MS 100.0            /* repete as buscas ate somar pelo menos isso */
+#define QUERIES 1000      
+#define MIN_MS 100.0         
 #define SEED 12345u
 
 typedef void (*SortFn)(Book *, size_t, BookCmp);
@@ -26,20 +18,18 @@ typedef int (*SearchFn)(const Book *, size_t, int);
 
 typedef struct Row {
     size_t n;
-    double sort_ms[2][2];       /* [0 insertion | 1 selection][0 codigo | 1 titulo] */
-    double seq_us, bin_us;      /* microssegundos por busca */
+    double sort_ms[2][2];      
+    double seq_us, bin_us;   
 } Row;
 
 static double ms_since(clock_t start) {
     return (double)(clock() - start) * 1000.0 / CLOCKS_PER_SEC;
 }
 
-/* Junta dois rand() porque RAND_MAX pode ser so 32767 (Windows). */
 static size_t rand_index(size_t n) {
     return (((size_t)rand() << 15) ^ (size_t)rand()) % n;
 }
 
-/* Livros com codigos 1..n embaralhados (Fisher-Yates) e titulos aleatorios. */
 static void fill_random(Book *v, size_t n) {
     size_t i;
     char title[11];
@@ -57,7 +47,6 @@ static void fill_random(Book *v, size_t n) {
     }
 }
 
-/* Ordena uma copia de base; devolve o tempo em ms e confere o resultado. */
 static double time_sort(SortFn sort, BookCmp cmp, const Book *base, Book *work, size_t n) {
     clock_t start;
     double ms;
@@ -69,9 +58,6 @@ static double time_sort(SortFn sort, BookCmp cmp, const Book *base, Book *work, 
     return ms;
 }
 
-/* Media em microssegundos por busca. Uma busca binaria leva menos que a
- * resolucao do clock() (ate 1 ms), entao o lote e repetido ate passar MIN_MS.
- * Contar os achados confere o resultado e impede o compilador de pular o laco. */
 static double time_search(SearchFn search, const Book *v, size_t n, const int *keys) {
     long rounds = 0, found = 0;
     double ms;
@@ -100,7 +86,6 @@ static int measure(size_t n, Row *row) {
             for (c = 0; c < 2; c++)
                 row->sort_ms[a][c] = time_sort(algos[a], cmps[c], base, work, n);
         for (q = 0; q < QUERIES; q++) keys[q] = (int)rand_index(n) + 1;
-        /* Sequencial no vetor como veio; binaria no mesmo vetor ordenado por codigo. */
         row->seq_us = time_search(search_seq_id, base, n, keys);
         memcpy(work, base, n * sizeof *work);
         sort_insertion(work, n, book_cmp_id);

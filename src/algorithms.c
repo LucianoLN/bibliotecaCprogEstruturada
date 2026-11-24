@@ -1,4 +1,3 @@
-// [COMMIT 8 - ORDENACAO] [COMMIT 9 - BUSCA BINARIA]
 #include <string.h>
 #include "algorithms.h"
 

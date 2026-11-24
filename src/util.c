@@ -1,9 +1,3 @@
-/*
- * util.c - Auxiliares de texto, numeros e datas (somente libc).
- *
- * [COMMIT 6 - ALOCACAO DINAMICA]  textos, inteiros e datas.
- * [COMMIT 11 - ATRASOS E MULTA]   leitura de datas e contas com dias.
- */
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
@@ -55,10 +49,9 @@ time_t date_make(int day, int month, int year) {
     tm.tm_mday = day;
     tm.tm_mon = month - 1;
     tm.tm_year = year - 1900;
-    tm.tm_hour = 12;                /* meio-dia: horario de verao nao muda o dia */
+    tm.tm_hour = 12;              
     tm.tm_isdst = -1;
     t = mktime(&tm);
-    /* mktime "conserta" 31/02 para 03/03; se algum campo mudou, a data nao existe. */
     if (t == (time_t)-1 || tm.tm_mday != day || tm.tm_mon != month - 1 ||
         tm.tm_year != year - 1900)
         return (time_t)-1;
@@ -85,15 +78,12 @@ void date_format(time_t t, char *buf, size_t size) {
     if (!tm || strftime(buf, size, "%d/%m/%Y", tm) == 0) str_copy(buf, "-", size);
 }
 
-/* ---------- [COMMIT 11 - ATRASOS E MULTA] ---------- */
-
 #define SECONDS_PER_DAY 86400
 
 int date_parse(const char *s, time_t *out) {
     int day, month, year;
     char extra;
     time_t t;
-    /* " %c" pega qualquer caractere que sobre depois do ano (ex.: "1/1/2026x"). */
     if (sscanf(s, "%d/%d/%d %c", &day, &month, &year, &extra) != 3) return 0;
     t = date_make(day, month, year);
     if (t == (time_t)-1) return 0;
@@ -101,13 +91,11 @@ int date_parse(const char *s, time_t *out) {
     return 1;
 }
 
-/* As datas ficam ao meio-dia, entao somar 86400 s por dia nunca cai no dia
- * errado, mesmo com 1 h de horario de verao no meio. */
 time_t date_add_days(time_t t, int days) {
     return t + (time_t)days * SECONDS_PER_DAY;
 }
 
 int date_diff_days(time_t from, time_t to) {
     double days = difftime(to, from) / SECONDS_PER_DAY;
-    return (int)(days < 0 ? days - 0.5 : days + 0.5);     /* arredonda ao dia mais proximo */
+    return (int)(days < 0 ? days - 0.5 : days + 0.5);
 }

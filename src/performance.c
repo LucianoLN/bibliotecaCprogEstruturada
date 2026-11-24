@@ -1,4 +1,3 @@
-// [COMMIT 12 - RELATORIO DE DESEMPENHO]
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -30,7 +29,6 @@ int performance_run_report(const char *output_filename) {
     volatile int seq_result = sequential_search_book_by_code(acervo, tamanho, 99999);
     clock_t seq_end = clock();
 
-    /* Preparacao exigida pela busca binaria: vetor ordenado por codigo. */
     insertion_sort_books_by_code(acervo, tamanho);
     clock_t bin_start = clock();
     volatile int bin_result = binary_search_book_by_code(acervo, tamanho, 99999);
@@ -42,7 +40,6 @@ int performance_run_report(const char *output_filename) {
         free(acervo); free(ins); free(sel); return -1;
     }
 
-    /* Dados em ordem decrescente aproximada para tornar o benchmark representativo. */
     for (size_t i = 0; i < tamanho; ++i) {
         ins[i] = acervo[tamanho - 1 - i];
         sel[i] = ins[i];

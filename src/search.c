@@ -1,9 +1,3 @@
-/*
- * search.c - Buscas no acervo.
- *
- * [PARTE 1]                         busca sequencial.
- * [COMMIT 9 - BUSCA BINARIA]      busca binaria por codigo e por titulo.
- */
 #include "search.h"
 #include "util.h"
 
@@ -21,8 +15,6 @@ int search_seq_title(const Book *v, size_t n, const char *title) {
     return -1;
 }
 
-/* [COMMIT 9] A cada passo descarta a metade do intervalo [lo, hi) que nao
- * pode conter a chave. mid = lo + (hi - lo) / 2 evita overflow de lo + hi. */
 int search_bin_id(const Book *v, size_t n, int id) {
     size_t lo = 0, hi = n;
     while (lo < hi) {

@@ -1,17 +1,3 @@
-/*
- * cli.c - Menu interativo no terminal.
- *
- * [PARTE 1]                         laco do menu, cadastro e listagem de livros.
- * [COMMIT 6 - ALOCACAO DINAMICA]    menu em tabela; usuarios, emprestimos,
- *                                   devolucoes e buscas sobre a Library dinamica.
- * [COMMIT 7 - ARQUIVOS BINARIOS]    salvar em .bin e exportar .txt.
- * [COMMIT 8 - ORDENACAO]            ordenar acervo por codigo ou titulo.
- * [COMMIT 9 - BUSCA BINARIA]        busca binaria com garantia de ordenacao.
- * [COMMIT 10 - HISTORICO]           historico de emprestimos por usuario.
- * [COMMIT 11 - ATRASOS E MULTA]     datas informadas, prazo, multa e atrasos.
- * [COMMIT 12 - RELATORIO DE DESEMPENHO] opcao que gera o relatorio de desempenho.
- * [COMMIT 13 - MENU E DOCUMENTACAO]  menu agrupado com resumo do acervo.
- */
 #include <stdio.h>
 #include <string.h>
 #include "cli.h"
@@ -24,9 +10,7 @@
 
 #define LINE_LEN 256
 
-/* ---------- Entrada ---------- */
 
-/* Le uma linha sem o '\n'. Devolve 0 no fim da entrada (EOF). */
 static int read_line(const char *prompt, char *buf, size_t size) {
     printf("%s", prompt);
     fflush(stdout);
@@ -34,7 +18,7 @@ static int read_line(const char *prompt, char *buf, size_t size) {
         buf[0] = '\0';
         return 0;
     }
-    if (!strchr(buf, '\n')) {       /* linha maior que o buffer: descarta o resto */
+    if (!strchr(buf, '\n')) {   
         int c;
         while ((c = getchar()) != '\n' && c != EOF) {}
     }
@@ -50,8 +34,6 @@ static int read_int(const char *prompt, int *out) {
     return 0;
 }
 
-/* [COMMIT 11] Le dd/mm/aaaa; Enter vazio = hoje (permite registrar datas
- * passadas e simular atrasos). */
 static int read_date(const char *prompt, time_t *out) {
     char buf[32];
     if (!read_line(prompt, buf, sizeof buf)) return 0;
@@ -68,7 +50,6 @@ static void report_error(int rc) {
     printf("Erro: %s.\n", lib_strerror(rc));
 }
 
-/* ---------- Impressao ---------- */
 
 static void print_book_header(void) {
     printf("%-6s %-35s %-25s %5s %5s\n", "Codigo", "Titulo", "Autor", "Ano", "Disp.");
@@ -83,7 +64,6 @@ static void print_loan_header(void) {
            "Titulo", "Emprestimo", "Prazo", "Devolucao", "Multa");
 }
 
-/* [COMMIT 11] Mostra tambem o prazo e a multa (acumulada ate hoje se aberto). */
 static void print_loan(const Library *lib, const Loan *l) {
     const Book *b = lib_find_book(lib, l->book_id);
     char loaned[16], due[16], returned[16], fine[24];
@@ -95,8 +75,6 @@ static void print_loan(const Library *lib, const Loan *l) {
            l->book_id, b ? b->title : "?", loaned, due,
            l->return_date ? returned : "em aberto", fine);
 }
-
-/* ---------- Livros ---------- */
 
 static void add_book(Library *lib) {
     char title[LINE_LEN], author[LINE_LEN];
@@ -119,7 +97,6 @@ static void list_books(Library *lib) {
     for (i = 0; i < lib->n_books; i++) print_book(&lib->books[i]);
 }
 
-/* [PARTE 1] Busca sequencial por trecho do titulo ou do autor. */
 static void search_books(Library *lib) {
     char term[LINE_LEN];
     size_t i;
@@ -135,7 +112,6 @@ static void search_books(Library *lib) {
     printf("%lu livro(s) encontrado(s).\n", found);
 }
 
-/* [COMMIT 8] Pergunta o criterio; NULL se a opcao for invalida. */
 static BookCmp read_criterion(void) {
     int field;
     if (!read_int("Campo (1 = codigo, 2 = titulo): ", &field)) return NULL;
@@ -145,7 +121,6 @@ static BookCmp read_criterion(void) {
     return NULL;
 }
 
-/* [COMMIT 8] Ordena o proprio vetor do acervo (a ordem fica salva no .bin). */
 static void sort_books(Library *lib) {
     int algo;
     BookCmp cmp;
@@ -161,8 +136,6 @@ static void sort_books(Library *lib) {
     list_books(lib);
 }
 
-/* [COMMIT 9] Busca binaria. Ela so funciona em vetor ordenado pelo mesmo
- * campo, entao confere antes e, se preciso, ordena com Insertion Sort. */
 static void binary_search_books(Library *lib) {
     char title[LINE_LEN];
     int id = 0, idx;
@@ -188,7 +161,6 @@ static void binary_search_books(Library *lib) {
     print_book(&lib->books[idx]);
 }
 
-/* ---------- Usuarios ---------- */
 
 static void add_user(Library *lib) {
     char name[LINE_LEN], course[LINE_LEN];
@@ -214,7 +186,6 @@ static void list_users(Library *lib) {
     }
 }
 
-/* [PARTE 1] Busca sequencial por matricula. */
 static void find_user(Library *lib) {
     int reg;
     const User *u;
@@ -224,7 +195,6 @@ static void find_user(Library *lib) {
     else printf("%d - %s (%s)\n", u->registration, u->name, u->course);
 }
 
-/* ---------- Emprestimos ---------- */
 
 static void lend_book(Library *lib) {
     int reg, book_id, rc;
@@ -242,7 +212,6 @@ static void lend_book(Library *lib) {
     printf("Emprestimo %d registrado. Devolver ate %s.\n", rc, due);
 }
 
-/* [COMMIT 11] Na devolucao calcula o atraso e a multa. */
 static void return_book(Library *lib) {
     int reg, book_id, rc, late;
     time_t when;
@@ -268,7 +237,6 @@ static void return_book(Library *lib) {
     printf("Devolucao registrada com %d dia(s) de atraso. Multa: %s.\n", late, fine);
 }
 
-/* [COMMIT 11] Emprestimos em aberto com prazo vencido e a multa ate hoje. */
 static void list_overdue(Library *lib) {
     time_t today = date_today();
     size_t i;
@@ -301,8 +269,6 @@ static void list_loans(Library *lib) {
     for (i = 0; i < lib->n_loans; i++) print_loan(lib, &lib->loans[i]);
 }
 
-/* [COMMIT 10 - HISTORICO] Todos os emprestimos de um usuario, abertos e
- * devolvidos, na ordem em que aconteceram, com os totais no fim. */
 static void user_history(Library *lib) {
     int reg;
     size_t i;
@@ -330,7 +296,6 @@ static void user_history(Library *lib) {
            total, open, total - open, fines_txt);
 }
 
-/* [COMMIT 12 - RELATORIO DE DESEMPENHO] */
 static void performance_report(Library *lib) {
     (void)lib;                      /* o benchmark usa dados proprios, nao o acervo */
     printf("Gerando relatorio (leva alguns segundos)...\n");
@@ -338,9 +303,7 @@ static void performance_report(Library *lib) {
     else printf("Erro ao gerar o relatorio (memoria ou arquivo).\n");
 }
 
-/* ---------- Arquivos ---------- */
 
-/* [COMMIT 7] O binario e o formato principal; o texto fica como exportacao. */
 static void save_now(Library *lib) {
     if (persist_save_bin(lib, BIN_FILE) == 0) printf("Dados salvos em %s.\n", BIN_FILE);
     else printf("Erro ao salvar os dados.\n");
@@ -353,33 +316,30 @@ static void export_txt(Library *lib) {
         printf("Erro ao exportar.\n");
 }
 
-/* ---------- Menu ---------- */
 
 typedef struct MenuItem {
-    const char *section;            /* [COMMIT 13] titulo do grupo, ou NULL */
+    const char *section;           
     const char *label;
     void (*run)(Library *lib);
 } MenuItem;
 
-/* [COMMIT 6] Menu em tabela: cada funcionalidade e uma linha aqui.
- * [COMMIT 13] Agrupado por assunto; a numeracao sai da posicao na tabela. */
 static const MenuItem MENU[] = {
     {"Acervo", "Cadastrar livro", add_book},
     {NULL, "Listar livros", list_books},
     {NULL, "Buscar livro por titulo/autor (sequencial)", search_books},
-    {NULL, "Buscar livro por codigo/titulo (binaria)", binary_search_books}, /* [COMMIT 9] */
-    {NULL, "Ordenar acervo (Insertion/Selection Sort)", sort_books},         /* [COMMIT 8] */
+    {NULL, "Buscar livro por codigo/titulo (binaria)", binary_search_books},
+    {NULL, "Ordenar acervo (Insertion/Selection Sort)", sort_books},        
     {"Usuarios", "Cadastrar usuario", add_user},
     {NULL, "Listar usuarios", list_users},
     {NULL, "Buscar usuario por matricula", find_user},
-    {NULL, "Historico de emprestimos do usuario", user_history},             /* [COMMIT 10] */
+    {NULL, "Historico de emprestimos do usuario", user_history},            
     {"Emprestimos", "Registrar emprestimo", lend_book},
     {NULL, "Registrar devolucao", return_book},
     {NULL, "Listar emprestimos", list_loans},
-    {NULL, "Emprestimos em atraso e multas", list_overdue},                  /* [COMMIT 11] */
-    {"Dados e relatorios", "Salvar dados (.bin)", save_now},                 /* [COMMIT 7] */
-    {NULL, "Exportar dados para texto (.txt)", export_txt},                  /* [COMMIT 7] */
-    {NULL, "Relatorio de desempenho", performance_report},                   /* [COMMIT 12] */
+    {NULL, "Emprestimos em atraso e multas", list_overdue},                 
+    {"Dados e relatorios", "Salvar dados (.bin)", save_now},                
+    {NULL, "Exportar dados para texto (.txt)", export_txt},                 
+    {NULL, "Relatorio de desempenho", performance_report},                  
 };
 #define MENU_LEN ((int)(sizeof MENU / sizeof MENU[0]))
 
