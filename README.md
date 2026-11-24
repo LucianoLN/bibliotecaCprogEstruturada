@@ -35,7 +35,7 @@ include/            src/
   fine.h              fine.c       prazo, atraso e multa
   report.h            report.c     relatório de desempenho
   util.h              util.c       textos, números e datas
-  cli.h               cli.c        menu interativo
+  cli.h                 clic.c       menu interativo
                       main.c       carrega, roda o menu, salva e libera a memória
 tests/test_books.c    testes automáticos com assert
 docs/                 histórico de commits e exemplo de relatório
@@ -55,7 +55,7 @@ make clean
 Sem `make`:
 
 ```sh
-gcc -Wall -Wextra -std=c99 -Iinclude src/*.c -o biblioteca
+gcc -Wall -Wextra -std=c99 -Iinclude src/book.c src/clic.c src/fine.c src/main.c src/persist.c src/report.c src/search.c src/sort.c src/storage.c src/util.c -o biblioteca
 ./biblioteca
 ```
 
