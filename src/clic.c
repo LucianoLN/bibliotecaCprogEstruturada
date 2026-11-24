@@ -350,6 +350,15 @@ static void user_history(Library *lib) {
            total, open, total - open, fines_txt);
 }
 
+/* [COMMIT 12 - RELATORIO DE DESEMPENHO] */
+static void performance_report(Library *lib) {
+    (void)lib;                      /* o benchmark usa dados proprios, nao o acervo */
+    printf("Gerando relatorio (leva alguns segundos)...\n");
+    if (report_run(REPORT_FILE) == 0) printf("\nRelatorio salvo em %s.\n", REPORT_FILE);
+    else printf("Erro ao gerar o relatorio (memoria ou arquivo).\n");
+}
+
+
 /* ---------- Arquivos ---------- */
 
 static void save_now(Library *lib) {
