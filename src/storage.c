@@ -1,18 +1,9 @@
-/*
- * storage.c - Estado da biblioteca em memoria.
- *
- * [COMMIT 6 - ALOCACAO DINAMICA]  vetores dinamicos com malloc/realloc/free.
- * [COMMIT 13 - VALIDACAO]         validacao de ano.
- */
 #include <stdlib.h>
 #include <string.h>
 #include "search.h"
 #include "storage.h"
 #include "util.h"
 
-/* [COMMIT 6] Garante espaco para mais um item dobrando a capacidade.
- * Devolve o vetor (talvez movido pelo realloc) ou NULL sem memoria; nesse
- * caso o vetor antigo continua valido, entao nada se perde. */
 static void *grow(void *arr, size_t *cap, size_t count, size_t elem_size) {
     size_t new_cap;
     void *p;
@@ -29,7 +20,6 @@ void lib_init(Library *lib) {
     lib->next_loan_id = 1;
 }
 
-/* [COMMIT 6] liberar_memoria: cada malloc/realloc tem seu free aqui. */
 void lib_free(Library *lib) {
     free(lib->books);
     free(lib->users);
@@ -76,7 +66,6 @@ int lib_push_loan(Library *lib, const Loan *l) {
     return 0;
 }
 
-/* '|' e o separador dos arquivos texto, entao nao pode aparecer nos campos. */
 static int valid_text(const char *s) {
     return s && *s && !strchr(s, '|');
 }
@@ -113,7 +102,7 @@ int lib_lend(Library *lib, int registration, int book_id, time_t when) {
     l.user_reg = registration;
     l.loan_date = when;
     l.return_date = 0;
-    rc = lib_push_loan(lib, &l);   /* realoca so loans; o ponteiro b continua valido */
+    rc = lib_push_loan(lib, &l);  
     if (rc < 0) return rc;
     b->quantity--;
     return l.id;

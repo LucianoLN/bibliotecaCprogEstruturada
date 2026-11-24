@@ -114,6 +114,34 @@ static void search_books(Library *lib) {
     printf("%lu livro(s) encontrado(s).\n", found);
 }
 
+
+/* [COMMIT 8] Pergunta o criterio; NULL se a opcao for invalida. */
+static BookCmp read_criterion(void) {
+    int field;
+    if (!read_int("Campo (1 = codigo, 2 = titulo): ", &field)) return NULL;
+    if (field == 1) return book_cmp_id;
+    if (field == 2) return book_cmp_title;
+    printf("Campo invalido.\n");
+    return NULL;
+}
+
+/* [COMMIT 8] Ordena o proprio vetor do acervo (a ordem fica salva no .bin). */
+static void sort_books(Library *lib) {
+    int algo;
+    BookCmp cmp;
+    if (!read_int("Algoritmo (1 = Insertion Sort, 2 = Selection Sort): ", &algo)) return;
+    if (algo != 1 && algo != 2) {
+        printf("Algoritmo invalido.\n");
+        return;
+    }
+    if (!(cmp = read_criterion())) return;
+    if (algo == 1) sort_insertion(lib->books, lib->n_books, cmp);
+    else sort_selection(lib->books, lib->n_books, cmp);
+    printf("Acervo ordenado com %s.\n", algo == 1 ? "Insertion Sort" : "Selection Sort");
+    list_books(lib);
+}
+
+
 /* ---------- Usuarios ---------- */
 
 static void add_user(Library *lib) {

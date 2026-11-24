@@ -5,7 +5,7 @@
 #include "book.h"
 #include "user.h"
 
-#define DATE_LEN 11 /* YYYY-MM-DD + '\0' */
+#define DATE_LEN 11 
 
 typedef struct Loan {
     int book_id;
