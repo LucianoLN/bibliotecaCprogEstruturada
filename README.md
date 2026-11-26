@@ -117,7 +117,5 @@ vetores ao sair, e o relatório libera seus vetores temporários ao fim de cada 
 valgrind --leak-check=full ./biblioteca
 ```
 
-## Histórico de commits
-
-Veja [`docs/commits.md`](docs/commits.md) e `git log --oneline`. No código, cada trecho está marcado com o
-commit que o introduziu, por exemplo `[COMMIT 8 - ORDENACAO]`.
+Projeto da disciplina Programação Estruturada
+Alunos: Luciano Nascimento e João Guilherme
